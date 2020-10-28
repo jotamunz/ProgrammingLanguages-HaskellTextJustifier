@@ -7,6 +7,10 @@ type Line = [Token]
 data Token = Word String | Blank | HypWord String
              deriving (Eq, Show)
 
+isBlank :: Token -> Bool
+isBlank (Blank) = True
+isBlank _ = False
+
 -- Returns line equivalent of a string with punctuation on words
 string2line :: String -> Line
 string2line text = map Word (words text)
@@ -22,20 +26,12 @@ token2string (Word text) = text
 token2string (Blank) = ""
 token2string (HypWord text) = text ++ "-"
 
--- Returns line without starting or ending spaces (TODO: should be made recursive)
+-- Returns line without starting or ending spaces (TODO: tests)
 removeOuterSpaces :: Line -> Line
 removeOuterSpaces line
-    | List.length line >= 2 = removeEndingSpace (List.last line) (removeStartingSpace (List.head line) line)
-    | List.length line == 1 = removeStartingSpace (List.head line) line
+    | List.null line == False && isBlank (List.head line) == True = removeOuterSpaces (List.drop 1 line)
+    | List.null line == False && isBlank (List.last line) == True = removeOuterSpaces (List.init line)
     | otherwise = line
-
-removeStartingSpace :: Token -> Line -> Line
-removeStartingSpace (Blank) line = List.drop 1 line
-removeStartingSpace _ line = line
-
-removeEndingSpace :: Token -> Line -> Line
-removeEndingSpace (Blank) line = List.init line
-removeEndingSpace _ line = line
 
 -- Returns length of a token
 tokenLength :: Token -> Int
