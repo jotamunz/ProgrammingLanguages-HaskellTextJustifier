@@ -56,4 +56,14 @@ maxTokensFit _ [] = 0
 maxTokensFit len (x:xs)
     | tokenSpaceLen <= len = 1 + maxTokensFit (len - tokenSpaceLen) xs
     | otherwise = 0
-    where tokenSpaceLen = (tokenLength x) + 1
+    where tokenSpaceLen = tokenSpaceLength x
+
+-- Returns length of a token with its consecutive space
+tokenSpaceLength :: Token -> Int
+tokenSpaceLength (Word text) = List.length text + 1
+tokenSpaceLength (Blank) = 1
+tokenSpaceLength (HypWord text) = (List.length text) + 2
+
+mergers :: [String] -> [()]
+mergers strips 
+    | List.length strips <= 1 = []
