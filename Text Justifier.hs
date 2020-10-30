@@ -1,19 +1,28 @@
 import Data.List as List
 import System.IO
+import Data.Map as Map hiding (map)
 
 texto = "Aquel que controla el pasado controla el futuro. Aquel que controla el presente controla el pasado."
 
 type Line = [Token]
 data Token = Word String | Blank | HypWord String
              deriving (Eq, Show)
+type HypMap = Map.Map String [String]
 
+-- TEMP
+enHyp :: HypMap
+enHyp = Map.fromList [ ("controla",["con","tro","la"]), 
+                            ("futuro",["fu","tu","ro"]),
+                            ("presente",["pre","sen","te"])]
+
+-- Returns if a token is of type blank
 isBlank :: Token -> Bool
 isBlank (Blank) = True
 isBlank _ = False
 
 -- Returns line equivalent of a string with punctuation on words
 string2line :: String -> Line
-string2line text = map Word (words text)
+string2line text = map Word (List.words text)
 
 -- Returns string equivalent of a line without starting or ending spaces
 line2string :: Line -> String
@@ -74,3 +83,20 @@ mergersAux strips amount
     | List.length strips <= amount = []
     | otherwise = [(List.intercalate "" (List.take amount strips), List.intercalate "" (List.drop amount strips))] ++ (mergersAux strips (amount + 1))
 
+-- Returns all posible combinations of ordered syllables from a word
+hyphenate :: HypMap -> Token -> [(Token, Token)]
+hyphenate dict (Word text) 
+    | Map.notMember cleanText dict == True = []
+    | otherwise = [(HypWord (fst x), Word (snd x)) | x <- combinations]
+    where combinations = mergers (List.init syllables ++ [List.last syllables ++ punctuation])
+          syllables = dict Map.! cleanText
+          cleanText = removePunctuation text
+          punctuation = extractPunctuation text
+
+-- Returns a string without punctuation
+removePunctuation :: String -> String
+removePunctuation text = [x | x <- text, not (x `elem` ",.?!:;")] 
+
+-- Returns punctuation of a string
+extractPunctuation :: String -> String
+extractPunctuation text = [x | x <- text, (x `elem` ",.?!:;")] 
