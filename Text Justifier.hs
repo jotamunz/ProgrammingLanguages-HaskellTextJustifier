@@ -64,6 +64,13 @@ tokenSpaceLength (Word text) = List.length text + 1
 tokenSpaceLength (Blank) = 1
 tokenSpaceLength (HypWord text) = (List.length text) + 2
 
-mergers :: [String] -> [()]
-mergers strips 
-    | List.length strips <= 1 = []
+-- Returns all posible combination of ordered pairs from a list of strings
+mergers :: [String] -> [(String, String)]
+mergers strips = mergersAux strips 1
+
+-- Returns all posible combination of ordered pairs from a list of strings if started at 1
+mergersAux :: [String] -> Int -> [(String, String)]
+mergersAux strips amount 
+    | List.length strips <= amount = []
+    | otherwise = [(List.intercalate "" (List.take amount strips), List.intercalate "" (List.drop amount strips))] ++ (mergersAux strips (amount + 1))
+
