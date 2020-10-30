@@ -12,19 +12,21 @@ type HypMap = Map.Map String [String]
 -- TEMP
 enHyp :: HypMap
 enHyp = Map.fromList [ ("controla",["con","tro","la"]), 
-                            ("futuro",["fu","tu","ro"]),
-                            ("presente",["pre","sen","te"])]
+                       ("futuro",["fu","tu","ro"]),
+                       ("presente",["pre","sen","te"])]
 
 -- Returns if a token is of type blank
 isBlank :: Token -> Bool
 isBlank (Blank) = True
 isBlank _ = False
 
--- Returns line equivalent of a string with punctuation on words
+-- Returns line equivalent of a string with punctuation
+-- Applies words to separate string by space
 string2line :: String -> Line
 string2line text = map Word (List.words text)
 
 -- Returns string equivalent of a line without starting or ending spaces
+-- Removes blanks, converts each token to string and intercalates space
 line2string :: Line -> String
 line2string [] = ""
 line2string line = List.intercalate " " (map token2string (removeOuterSpaces line))
@@ -35,7 +37,8 @@ token2string (Word text) = text
 token2string (Blank) = ""
 token2string (HypWord text) = text ++ "-"
 
--- Returns line without starting or ending spaces (TODO: tests)
+-- Returns line without starting or ending spaces
+-- Recursively removes blanks from the beginning and then from the end
 removeOuterSpaces :: Line -> Line
 removeOuterSpaces line
     | List.null line == False && isBlank (List.head line) == True = removeOuterSpaces (List.drop 1 line)
@@ -53,6 +56,7 @@ lineLength :: Line -> Int
 lineLength line = List.length (line2string line)
 
 -- Returns two lines separated at a specified length without starting and ending spaces
+-- Removes spaces, calculates the max amount of tokens that fit in the length and splits the line
 breakLine :: Int -> Line -> (Line, Line)
 breakLine _ [] = ([], [])
 breakLine len line = (List.take tokensFit cleanLine, List.drop tokensFit cleanLine) 
@@ -60,6 +64,8 @@ breakLine len line = (List.take tokensFit cleanLine, List.drop tokensFit cleanLi
           cleanLine = removeOuterSpaces line
 
 -- Returns the amount of tokens that fit in a specified length + 1 considering spaces
+-- Recursively checks if a token and its space fit in a length, increases the counter and subtracts the length
+-- All words are considered to have an ending space, the length is added 1 to ignore the line ending space
 maxTokensFit :: Int -> Line -> Int
 maxTokensFit _ [] = 0
 maxTokensFit len (x:xs)
@@ -73,17 +79,19 @@ tokenSpaceLength (Word text) = List.length text + 1
 tokenSpaceLength (Blank) = 1
 tokenSpaceLength (HypWord text) = (List.length text) + 2
 
--- Returns all posible combination of ordered pairs from a list of strings
+-- Returns all posible combinations of ordered pairs from a list of strings
 mergers :: [String] -> [(String, String)]
 mergers strips = mergersAux strips 1
 
--- Returns all posible combination of ordered pairs from a list of strings if started at 1
+-- Returns all posible combinations of ordered pairs from a list of strings if started at 1
+-- Recusively splits a list at the index and concatenates each half into a string forming tuples by incrementing the index. 
 mergersAux :: [String] -> Int -> [(String, String)]
 mergersAux strips amount 
     | List.length strips <= amount = []
     | otherwise = [(List.intercalate "" (List.take amount strips), List.intercalate "" (List.drop amount strips))] ++ (mergersAux strips (amount + 1))
 
 -- Returns all posible combinations of ordered syllables from a word
+-- Separates punctuation, searches for syllables in the dictionary, adds punctuation to last syllable, obtains all pair combinations of syllables, applies tags to each tuple
 hyphenate :: HypMap -> Token -> [(Token, Token)]
 hyphenate dict (Word text) 
     | Map.notMember cleanText dict == True = []
