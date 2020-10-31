@@ -133,3 +133,10 @@ maxHypFit len (x:xs)
 separateHypWord :: (Line, Line) -> [(Token, Token)] -> [(Line, Line)]
 separateHypWord _ [] = []
 separateHypWord hardSeparation (x:xs) = [(fst hardSeparation ++ [fst x], [snd x] ++ List.drop 1 (snd hardSeparation))] ++ (separateHypWord hardSeparation xs)   
+
+insertBlanks :: Int -> Line -> Line
+insertBlanks amount line = []
+
+createBlankSets :: Int -> Int -> [[Token]]
+createBlankSets amount divisor = [x ++ (replicate (fst division) Blank) | x <- (replicate divisor [])]
+    where division = divMod amount divisor
