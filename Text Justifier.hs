@@ -108,3 +108,28 @@ removePunctuation text = [x | x <- text, not (x `elem` ",.?!:;")]
 -- Returns punctuation of a string
 extractPunctuation :: String -> String
 extractPunctuation text = [x | x <- text, (x `elem` ",.?!:;")] 
+
+-- Returns a list of all the combinations of lines divided by a Word or a HypWord at a length
+-- Calculates the hard division of the line, obtains the hyphen combinations for the division of the line, calculates the hyphen divisions that fit in the remaining length and combines all posibilities
+lineBreaks :: HypMap -> Int -> Line -> [(Line, Line)]
+lineBreaks dict len line 
+    | List.null (snd hardSeparation) == True = [hardSeparation] 
+    | otherwise = [hardSeparation] ++ separateHypWord hardSeparation validHyphens
+    where validHyphens = List.take (maxHypFit (len - (lineLength (fst hardSeparation))) hyphens) hyphens
+          hyphens = hyphenate dict (List.head (snd hardSeparation))
+          hardSeparation = breakLine len line
+
+-- Returns the amount of hyphenated word pairs where the HypWord fits in a specified length
+-- Recursively checks if the hyphenated part of a word fits in a length for all combinations of hyphens
+maxHypFit :: Int -> [(Token, Token)] -> Int
+maxHypFit _ [] = 0
+maxHypFit len (x:xs)
+    | tokenLen <= len = 1 + maxHypFit len xs
+    | otherwise = 0
+    where tokenLen = tokenLength (fst x)
+
+-- Returns a list of all the combinations of lines divided by a HypWord
+-- Recursively adds each HypWord to the end of the first line and the rest of the word at the beginning of the second
+separateHypWord :: (Line, Line) -> [(Token, Token)] -> [(Line, Line)]
+separateHypWord _ [] = []
+separateHypWord hardSeparation (x:xs) = [(fst hardSeparation ++ [fst x], [snd x] ++ List.drop 1 (snd hardSeparation))] ++ (separateHypWord hardSeparation xs)   
