@@ -135,8 +135,12 @@ separateHypWord _ [] = []
 separateHypWord hardSeparation (x:xs) = [(fst hardSeparation ++ [fst x], [snd x] ++ List.drop 1 (snd hardSeparation))] ++ (separateHypWord hardSeparation xs)   
 
 insertBlanks :: Int -> Line -> Line
-insertBlanks amount line = []
+insertBlanks _ [] = []
+insertBlanks amount line = [[x] ++ y | x <- line | y <- blankSets]
+    where blankSets = createBlankSets amount ((List.length line) - 1)
 
 createBlankSets :: Int -> Int -> [[Token]]
-createBlankSets amount divisor = [x ++ (replicate (fst division) Blank) | x <- (replicate divisor [])]
-    where division = divMod amount divisor
+createBlankSets amount divisor = (zipWith (++) integerBlankSets remainderBlankSets) ++ [[]]
+    where remainderBlankSets = (replicate (snd division) [Blank]) ++ (replicate (fst division - snd division) [])
+          integerBlankSets = [x ++ (replicate (fst division) Blank) | x <- (replicate divisor [])]
+          division = divMod amount divisor
