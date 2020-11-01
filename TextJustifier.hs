@@ -1,5 +1,5 @@
+module TextJustifier where
 import Data.List as List
-import System.IO
 import Data.Map as Map hiding (map)
 
 type Line = [Token]
