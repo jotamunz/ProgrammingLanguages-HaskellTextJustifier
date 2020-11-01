@@ -111,11 +111,12 @@ extractPunctuation text = [x | x <- text, (x `elem` ",.?!:;")]
 
 -- Returns a list of all the combinations of lines divided by a Word or a HypWord at a length
 -- Calculates the hard division of the line, obtains the hyphen combinations for the division of the line, calculates the hyphen divisions that fit in the remaining length and combines all posibilities
+-- The remaining length is reduced by one to consider the extra space before the valid HypWords
 lineBreaks :: HypMap -> Int -> Line -> [(Line, Line)]
 lineBreaks dict len line 
     | List.null (snd hardSeparation) == True = [hardSeparation] 
     | otherwise = [hardSeparation] ++ separateHypWord hardSeparation validHyphens
-    where validHyphens = List.take (maxHypFit (len - (lineLength (fst hardSeparation))) hyphens) hyphens
+    where validHyphens = List.take (maxHypFit (len - (lineLength (fst hardSeparation)) - 1) hyphens) hyphens
           hyphens = hyphenate dict (List.head (snd hardSeparation))
           hardSeparation = breakLine len line
 
@@ -150,3 +151,29 @@ createBlankSets amount divisor = (List.zipWith (++) integerBlankSets remainderBl
     where remainderBlankSets = (List.replicate (snd division) [Blank]) ++ (List.replicate (divisor - snd division) [])
           integerBlankSets = [x ++ (List.replicate (fst division) Blank) | x <- (List.replicate divisor [])]
           division = divMod amount divisor
+
+separarYalinear :: Int -> Bool -> Bool -> String -> [String]
+separarYalinear _ _ _ "" = []
+separarYalinear len separate adjust text 
+    | separate == False && adjust == False = map line2string brokenLinesWords
+    | separate == False && adjust == True = [line2string (insertBlanks (len - (lineLength x)) x) | x <- List.init brokenLinesWords] ++ [line2string (List.last brokenLinesWords)]
+    | separate == True && adjust == False = map line2string brokenLinesHypWords
+    | separate == True && adjust == True = 
+    where brokenLinesHypWords = breakAllLinesHypWords len line
+          brokenLinesWords = breakAllLinesWords len line
+          line = string2line text
+
+-- Returns a list of lines broken at a length using only Words
+-- Recursively breaks line at a length
+breakAllLinesWords :: Int -> Line -> [Line]
+breakAllLinesWords _ [] = []
+breakAllLinesWords len line = [fst brokenLine] ++ breakAllLinesWords len (snd brokenLine)
+    where brokenLine = breakLine len line
+
+-- Returns a list of lines broken at a length using Words or HypWords
+-- Recursively breaks line at a length and selects the option with the most length
+breakAllLinesHypWords :: Int -> Line -> [Line]
+breakAllLinesHypWords _ [] = []
+breakAllLinesHypWords len line = [fst brokenLine] ++ breakAllLinesHypWords len (snd brokenLine)
+    where brokenLine = List.last (lineBreaks enHyp len line)
+          
