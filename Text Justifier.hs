@@ -2,8 +2,6 @@ import Data.List as List
 import System.IO
 import Data.Map as Map hiding (map)
 
-texto = "Aquel que controla el pasado controla el futuro. Aquel que controla el presente controla el pasado."
-
 type Line = [Token]
 data Token = Word String | Blank | HypWord String
              deriving (Eq, Show)
@@ -152,13 +150,16 @@ createBlankSets amount divisor = (List.zipWith (++) integerBlankSets remainderBl
           integerBlankSets = [x ++ (List.replicate (fst division) Blank) | x <- (List.replicate divisor [])]
           division = divMod amount divisor
 
+-- Returns a list of strings broken at a length and based on two flags
+-- Converts text to Line, separates the line with Words or with both Words and HypWords, converts each line back to string
+-- To adjust the lines, evenly inserts the remaining length with blanks excpet to the last line, converts line piece back to string
 separarYalinear :: Int -> Bool -> Bool -> String -> [String]
 separarYalinear _ _ _ "" = []
 separarYalinear len separate adjust text 
     | separate == False && adjust == False = map line2string brokenLinesWords
     | separate == False && adjust == True = [line2string (insertBlanks (len - (lineLength x)) x) | x <- List.init brokenLinesWords] ++ [line2string (List.last brokenLinesWords)]
     | separate == True && adjust == False = map line2string brokenLinesHypWords
-    | separate == True && adjust == True = 
+    | separate == True && adjust == True = [line2string (insertBlanks (len - (lineLength x)) x) | x <- List.init brokenLinesHypWords] ++ [line2string (List.last brokenLinesHypWords)]
     where brokenLinesHypWords = breakAllLinesHypWords len line
           brokenLinesWords = breakAllLinesWords len line
           line = string2line text
