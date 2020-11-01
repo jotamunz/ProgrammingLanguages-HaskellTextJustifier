@@ -7,12 +7,6 @@ data Token = Word String | Blank | HypWord String
              deriving (Eq, Show)
 type HypMap = Map.Map String [String]
 
--- TEMP
-enHyp :: HypMap
-enHyp = Map.fromList [ ("controla",["con","tro","la"]), 
-                       ("futuro",["fu","tu","ro"]),
-                       ("presente",["pre","sen","te"])]
-
 -- Returns if a token is of type blank
 isBlank :: Token -> Bool
 isBlank (Blank) = True
@@ -153,14 +147,14 @@ createBlankSets amount divisor = (List.zipWith (++) integerBlankSets remainderBl
 -- Returns a list of strings broken at a length and based on two flags
 -- Converts text to Line, separates the line with Words or with both Words and HypWords, converts each line back to string
 -- To adjust the lines, evenly inserts the remaining length with blanks excpet to the last line, converts line piece back to string
-separarYalinear :: Int -> Bool -> Bool -> String -> [String]
-separarYalinear _ _ _ "" = []
-separarYalinear len separate adjust text 
+separarYalinear :: HypMap -> Int -> Bool -> Bool -> String -> [String]
+separarYalinear _ _ _ _ "" = []
+separarYalinear dict len separate adjust text 
     | separate == False && adjust == False = map line2string brokenLinesWords
     | separate == False && adjust == True = [line2string (insertBlanks (len - (lineLength x)) x) | x <- List.init brokenLinesWords] ++ [line2string (List.last brokenLinesWords)]
     | separate == True && adjust == False = map line2string brokenLinesHypWords
     | separate == True && adjust == True = [line2string (insertBlanks (len - (lineLength x)) x) | x <- List.init brokenLinesHypWords] ++ [line2string (List.last brokenLinesHypWords)]
-    where brokenLinesHypWords = breakAllLinesHypWords len line
+    where brokenLinesHypWords = breakAllLinesHypWords dict len line
           brokenLinesWords = breakAllLinesWords len line
           line = string2line text
 
@@ -173,8 +167,8 @@ breakAllLinesWords len line = [fst brokenLine] ++ breakAllLinesWords len (snd br
 
 -- Returns a list of lines broken at a length using Words or HypWords
 -- Recursively breaks line at a length and selects the option with the most length
-breakAllLinesHypWords :: Int -> Line -> [Line]
-breakAllLinesHypWords _ [] = []
-breakAllLinesHypWords len line = [fst brokenLine] ++ breakAllLinesHypWords len (snd brokenLine)
-    where brokenLine = List.last (lineBreaks enHyp len line)
+breakAllLinesHypWords :: HypMap -> Int -> Line -> [Line]
+breakAllLinesHypWords _ _ [] = []
+breakAllLinesHypWords dict len line = [fst brokenLine] ++ breakAllLinesHypWords dict len (snd brokenLine)
+    where brokenLine = List.last (lineBreaks dict len line)
           

@@ -5,6 +5,7 @@ import Data.Map as Map hiding (map)
 import System.IO as SysIO
 import TextJustifier as Just (HypMap, separarYalinear) 
 import Prelude hiding (filter, lookup, map, null) 
+import Text.Read as Read
 
 type Status = HypMap
 
@@ -21,7 +22,7 @@ mainloop status = do
     let inpInst = List.words inpStr
     let command = inpInst !! 0
     case command of
-        "load" -> do
+        "load" -> do --Expetion file no exist
             let fileName = (inpInst !! 1)
             handle <- SysIO.openFile fileName SysIO.ReadMode
             newStatus <- loadDict handle (Map.fromList [])
@@ -36,10 +37,20 @@ mainloop status = do
             let syllables = (inpInst !! 2)
             newStatus <- addToken status token (List.words [if x == '-' then ' ' else x | x <- syllables])
             mainloop newStatus
+        "split" -> do 
+            let len = string2int (inpInst !! 1)
+            let separate = string2bool (inpInst !! 2)
+            let adjust = string2bool (inpInst !! 3)
+            if List.null separate || List.null adjust || len == 0
+                then SysIO.putStrLn "Valor incorrecto para separar o ajustar (s/n) o para largo de linea (>=1)"
+            else do
+                let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) (List.unwords (List.drop 4 inpInst))
+                SysIO.putStrLn (show justifiedText)
+            mainloop status
         "exit" -> do
             SysIO.putStrLn "Saliendo..."
         _ -> do
-            putStrLn $ "Comando desconocido (" ++ command ++ "): '" ++ inpStr ++ "'"
+            SysIO.putStrLn $ "Comando desconocido (" ++ command ++ "): '" ++ inpStr ++ "'"
             mainloop status
 
 -- Returns the status with a dictionary according to the handle
@@ -71,4 +82,17 @@ addToken status token syllables =
         then return status
     else return (Map.insert token syllables status)
 
+-- Returns a list containing the bool value of a yes or no string, if invalid returns empty
+string2bool :: String -> [Bool]
+string2bool str
+    | str == "s" = [True]
+    | str == "n" = [False]
+    | otherwise = []
 
+-- Returns the int value of a string, if invalid returns 0
+string2int :: String -> Int
+string2int str =
+    case maybeInt of
+        Just n  -> n
+        Nothing -> 0
+    where maybeInt = Read.readMaybe str :: Maybe Int
