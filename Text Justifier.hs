@@ -134,13 +134,19 @@ separateHypWord :: (Line, Line) -> [(Token, Token)] -> [(Line, Line)]
 separateHypWord _ [] = []
 separateHypWord hardSeparation (x:xs) = [(fst hardSeparation ++ [fst x], [snd x] ++ List.drop 1 (snd hardSeparation))] ++ (separateHypWord hardSeparation xs)   
 
+-- Returns a line separated by an amount of blanks evenly distributed
+-- converts each element in the line to a list, zips it with the sets of blanks for each element and concats all results into a single line
 insertBlanks :: Int -> Line -> Line
 insertBlanks _ [] = []
-insertBlanks amount line = [[x] ++ y | x <- line | y <- blankSets]
-    where blankSets = createBlankSets amount ((List.length line) - 1)
+insertBlanks amount line = List.concat (List.zipWith (++) lineSeg blankSets)
+    where lineSeg = [[x] | x <- line]
+          blankSets = createBlankSets amount ((List.length line) - 1)
 
+-- Returns a list with an amount of blanks divided in a certain amount of groups
+-- Creates an empty list of the group size, integer divides the blanks into the groups, creates a list with the remainders and fills it with empty to the group size, zips both lists
+-- An extra empty is added to make the list the same size as the line it is meant for
 createBlankSets :: Int -> Int -> [[Token]]
-createBlankSets amount divisor = (zipWith (++) integerBlankSets remainderBlankSets) ++ [[]]
-    where remainderBlankSets = (replicate (snd division) [Blank]) ++ (replicate (fst division - snd division) [])
-          integerBlankSets = [x ++ (replicate (fst division) Blank) | x <- (replicate divisor [])]
+createBlankSets amount divisor = (List.zipWith (++) integerBlankSets remainderBlankSets) ++ [[]]
+    where remainderBlankSets = (List.replicate (snd division) [Blank]) ++ (List.replicate (divisor - snd division) [])
+          integerBlankSets = [x ++ (List.replicate (fst division) Blank) | x <- (List.replicate divisor [])]
           division = divMod amount divisor
