@@ -3,9 +3,9 @@ module Menu where
 import Data.List as List
 import Data.Map as Map hiding (map)
 import System.IO as SysIO
-import TextJustifier as Just (HypMap, separarYalinear) 
+import Text.Read as Read (readMaybe)
 import Prelude hiding (filter, lookup, map, null) 
-import Text.Read as Read
+import TextJustifier as Just (HypMap, separarYalinear) 
 
 type Status = HypMap
 
@@ -22,7 +22,7 @@ mainloop status = do
     let inpInst = List.words inpStr
     let command = inpInst !! 0
     case command of
-        "load" -> do --Expetion file no exist
+        "load" -> do --Exception file no exist
             let fileName = (inpInst !! 1)
             handle <- SysIO.openFile fileName SysIO.ReadMode
             newStatus <- loadDict handle (Map.fromList [])
@@ -30,13 +30,21 @@ mainloop status = do
             SysIO.putStrLn ("Diccionario cargado (" ++ (show (List.length (Map.keys newStatus))) ++ " palabras)")
             mainloop newStatus
         "show" -> do
-            SysIO.putStrLn (show status)
+            SysIO.putStrLn (List.unlines [(fst x) ++ " " ++ (List.intercalate "-" (snd x)) | x <- Map.toList status])
             mainloop status
         "ins" -> do
             let token = (inpInst !! 1)
             let syllables = (inpInst !! 2)
             newStatus <- addToken status token (List.words [if x == '-' then ' ' else x | x <- syllables])
+            SysIO.putStrLn ("Palabra " ++ token ++ " agregada")
             mainloop newStatus
+        "save" -> do -- Exception
+            let fileName = (inpInst !! 1)
+            handle <- SysIO.openFile fileName SysIO.WriteMode
+            SysIO.hPutStr handle (List.unlines [(fst x) ++ " " ++ (List.intercalate "-" (snd x)) | x <- Map.toList status])
+            SysIO.hClose handle
+            SysIO.putStrLn ("Diccionario guardado (" ++ (show (List.length (Map.keys status))) ++ " palabras)")
+            mainloop status
         "split" -> do 
             let len = string2int (inpInst !! 1)
             let separate = string2bool (inpInst !! 2)
@@ -46,6 +54,27 @@ mainloop status = do
             else do
                 let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) (List.unwords (List.drop 4 inpInst))
                 SysIO.putStrLn (show justifiedText)
+            mainloop status
+        "splitf" -> do -- Excpetion
+            let fileName = (inpInst !! 4)
+            handle <- SysIO.openFile fileName SysIO.ReadMode
+            text <- SysIO.hGetContents handle
+            let len = string2int (inpInst !! 1)
+            let separate = string2bool (inpInst !! 2)
+            let adjust = string2bool (inpInst !! 3)
+            if List.null separate || List.null adjust || len == 0
+                then SysIO.putStrLn "Valor incorrecto para separar o ajustar (s/n) o para largo de linea (>=1)"
+            else do
+                let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) text
+                if List.length inpInst == 6
+                    then do
+                        let fileName = (inpInst !! 5)
+                        handle2 <- SysIO.openFile fileName SysIO.WriteMode
+                        SysIO.hPutStr handle2 (List.unlines justifiedText)
+                        SysIO.hClose handle2
+                        SysIO.putStrLn ("Texto guardado (" ++ (show (List.length justifiedText)) ++ " lineas)")
+                else SysIO.putStrLn (List.unlines justifiedText)
+            SysIO.hClose handle
             mainloop status
         "exit" -> do
             SysIO.putStrLn "Saliendo..."
