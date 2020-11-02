@@ -53,7 +53,7 @@ mainloop status = do
                 then SysIO.putStrLn "Valor incorrecto para separar o ajustar (s/n) o para largo de linea (>=1)"
             else do
                 let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) (List.unwords (List.drop 4 inpInst))
-                SysIO.putStrLn (show justifiedText)
+                SysIO.putStrLn (List.unlines justifiedText)
             mainloop status
         "splitf" -> do -- Excpetion
             let fileName = (inpInst !! 4)
