@@ -5,6 +5,7 @@ import Data.Map as Map hiding (map)
 import System.IO as SysIO
 import System.Directory as Dir (doesFileExist)
 import Text.Read as Read (readMaybe)
+import Data.Char as Char (ord)
 import Prelude hiding (filter, lookup, map, null) 
 import TextJustifier as Just (HypMap, separarYalinear) 
 
@@ -47,7 +48,7 @@ mainloop status = do
         "save" -> do 
             let fileName = (inpInst !! 1)
             handle <- SysIO.openFile fileName SysIO.WriteMode
-            SysIO.hPutStr handle (List.unlines [(fst x) ++ " " ++ (List.intercalate "-" (snd x)) | x <- Map.toList status])
+            SysIO.hPutStr handle (unnormalizeText (List.unlines [(fst x) ++ " " ++ (List.intercalate "-" (snd x)) | x <- Map.toList status]))
             SysIO.hClose handle
             SysIO.putStrLn ("Diccionario guardado (" ++ (show (List.length (Map.keys status))) ++ " palabras)")
             mainloop status
@@ -70,17 +71,18 @@ mainloop status = do
             else do
                 handle <- SysIO.openFile fileName SysIO.ReadMode
                 text <- SysIO.hGetContents handle
+                let normalizedText = normalizeText text
                 let len = string2int (inpInst !! 1)
                 let separate = string2bool (inpInst !! 2)
                 let adjust = string2bool (inpInst !! 3)
                 if List.null separate || List.null adjust || len == 0
                     then SysIO.putStrLn "Valor incorrecto para separar o ajustar (s/n) o para largo de linea (>=1)"
                 else do
-                    let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) text
+                    let justifiedText = Just.separarYalinear status len (List.head separate) (List.head adjust) normalizedText
                     if List.length inpInst == 6 then do
                         let fileName = (inpInst !! 5)
                         handle2 <- SysIO.openFile fileName SysIO.WriteMode
-                        SysIO.hPutStr handle2 (List.unlines justifiedText)
+                        SysIO.hPutStr handle2 (unnormalizeText (List.unlines justifiedText))
                         SysIO.hClose handle2
                         SysIO.putStrLn ("Texto guardado (" ++ (show (List.length justifiedText)) ++ " lineas)")
                     else SysIO.putStrLn (List.unlines justifiedText)
@@ -101,7 +103,7 @@ loadDict handle status = do
         then return status
     else do
         inpStr <- SysIO.hGetLine handle
-        let fileLine = List.words (inpStr)
+        let fileLine = List.words (normalizeText inpStr)
         let newStatus = addTokenAux status (List.head fileLine) (List.words [if x == '-' then ' ' else x | x <- List.last fileLine])
         loadDict handle newStatus
 
@@ -135,3 +137,25 @@ string2int str =
         Just n  -> n
         Nothing -> 0
     where maybeInt = Read.readMaybe str :: Maybe Int
+
+-- Returns a string replacing the decomposed ascii for accents with the composed ascii for accents
+normalizeText :: String -> String
+normalizeText [] = []
+normalizeText (x:xs)
+    | Char.ord x == 9500 && Char.ord (List.head xs) == 237 = "á" ++ (normalizeText (List.drop 1 xs))
+    | Char.ord x == 9500 && Char.ord (List.head xs) == 8976 = "é" ++ (normalizeText (List.drop 1 xs))
+    | Char.ord x == 9500 && Char.ord (List.head xs) == 161 = "í" ++ (normalizeText (List.drop 1 xs))
+    | Char.ord x == 9500 && Char.ord (List.head xs) == 9474 = "ó" ++ (normalizeText (List.drop 1 xs))
+    | Char.ord x == 9500 && Char.ord (List.head xs) == 9553 = "ú" ++ (normalizeText (List.drop 1 xs))
+    | otherwise = [x] ++ normalizeText xs
+
+-- Returns a string replacing the composed ascii for accents with the decomposed ascii for accents
+unnormalizeText :: String -> String
+unnormalizeText [] = []
+unnormalizeText (x:xs)
+    | x == 'á' = "\9500\237" ++ unnormalizeText xs
+    | x == 'é' = "\9500\8976" ++ unnormalizeText xs
+    | x == 'í' = "\9500\161" ++ unnormalizeText xs
+    | x == 'ó' = "\9500\9474" ++ unnormalizeText xs
+    | x == 'ú' = "\9500\9553" ++ unnormalizeText xs
+    | otherwise = [x] ++ unnormalizeText xs
